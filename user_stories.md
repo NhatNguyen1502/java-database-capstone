@@ -14,21 +14,15 @@ This document contains user stories for the Healthcare Appointment Management Sy
 _As an admin, I want to create, view, update, and delete user accounts for patients and doctors, so that I can control system access and maintain accurate user records._
 
 **Acceptance Criteria:**
-1. Admin can create new user accounts with required fields (name, email, password, role)
-2. Admin can view a list of all users with filtering and search capabilities
-3. Admin can edit user information (name, email, contact details)
-4. Admin can deactivate or delete user accounts with confirmation prompt
-5. System logs all user management actions for audit purposes
-6. Email notifications are sent to users when accounts are created or modified
+1. Admin can INSERT into patients, doctors, or admin tables
+2. Required fields: full_name, email, password_hash, phone
+3. Can UPDATE user information
+4. Can set is_active = FALSE for soft deletion
+5. All actions logged in audit_logs with user_type='admin'
 
 **Priority:** High
 
-**Story Points:** 8
-
-**Notes:**
-- Consider soft delete vs hard delete for data retention policies
-- Implement role-based access control to prevent unauthorized user management
-- Include bulk import functionality for adding multiple users
+**Story Points:** 5
 
 ---
 
@@ -37,20 +31,13 @@ _As an admin, I want to create, view, update, and delete user accounts for patie
 _As an admin, I want to assign and modify user roles (patient, doctor, admin), so that users have appropriate access permissions based on their responsibilities._
 
 **Acceptance Criteria:**
-1. Admin can select from predefined roles (Patient, Doctor, Admin)
-2. Role changes take effect immediately upon confirmation
-3. System validates role assignments to prevent conflicts
-4. Users are notified when their role is changed
-5. Admin cannot remove their own admin role if they are the last admin
-6. Role change history is recorded in the system logs
+1. Admin can set role field in admin table ('super_admin' or 'admin')
+2. Cannot delete last active super_admin (business rule in code)
+3. Role changes logged in audit_logs
 
-**Priority:** High
+**Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Implement safeguards against locking all admins out of the system
-- Consider implementing custom permission sets for future scalability
+**Story Points:** 3
 
 ---
 
@@ -59,20 +46,14 @@ _As an admin, I want to assign and modify user roles (patient, doctor, admin), s
 _As an admin, I want to view user login history and activity logs, so that I can monitor system usage and identify potential security issues._
 
 **Acceptance Criteria:**
-1. Admin can view login attempts (successful and failed) with timestamps
-2. Activity logs show user actions with date, time, and IP address
-3. Logs can be filtered by user, date range, and activity type
-4. System flags suspicious activities (multiple failed logins, unusual access patterns)
-5. Activity data can be exported to CSV or PDF format
-6. Logs are retained according to compliance requirements
+1. Query audit_logs table for all user activities
+2. Filter by: user_type, user_id, action, created_at
+3. Display: action, entity_type, entity_id, details, ip_address, user_agent, created_at
+4. Indexed queries for fast filtering
 
 **Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Consider implementing real-time alerts for security events
-- Ensure compliance with data privacy regulations (GDPR, HIPAA)
+**Story Points:** 3
 
 ---
 
@@ -83,64 +64,30 @@ _As an admin, I want to view user login history and activity logs, so that I can
 _As an admin, I want to access a comprehensive dashboard with system statistics, so that I can monitor overall system performance and usage metrics._
 
 **Acceptance Criteria:**
-1. Dashboard displays key metrics (total users, active appointments, system uptime)
-2. Visual charts show trends over time (daily/weekly/monthly)
-3. Real-time statistics update automatically
-4. Dashboard is accessible immediately upon admin login
-5. Metrics include patient registrations, appointment bookings, and doctor availability
-6. Dashboard is responsive and works on mobile devices
+1. COUNT queries on patients, doctors, appointments tables
+2. Display: total active users (is_active = TRUE), appointments by status
+3. Filter appointments by date range
+4. Simple aggregation queries
 
 **Priority:** High
 
-**Story Points:** 8
-
-**Notes:**
-- Use charts/graphs for better data visualization
-- Consider adding customizable widgets for personalized dashboards
+**Story Points:** 3
 
 ---
 
-#### **US-A005: Manage System Settings**
+#### **US-A005: Generate Reports**
 **Title:**
-_As an admin, I want to configure system-wide settings and preferences, so that I can customize the system to meet organizational requirements._
+_As an admin, I want to generate basic reports on appointments and users, so that I can track system usage._
 
 **Acceptance Criteria:**
-1. Admin can configure appointment duration intervals (15, 30, 60 minutes)
-2. Admin can set business hours and holidays
-3. Admin can configure email notification templates
-4. Admin can enable/disable system features
-5. Changes to settings are validated before saving
-6. System provides confirmation message after successful configuration
-
-**Priority:** Medium
-
-**Story Points:** 8
-
-**Notes:**
-- Implement version control for settings changes
-- Provide default configurations for quick setup
-
----
-
-#### **US-A006: Generate Reports**
-**Title:**
-_As an admin, I want to generate reports on appointments, users, and system usage, so that I can analyze trends and make data-driven decisions._
-
-**Acceptance Criteria:**
-1. Admin can generate reports by type (appointments, users, revenue)
-2. Reports can be filtered by date range, doctor, department
-3. Reports display summary statistics and detailed breakdowns
-4. Reports can be exported to PDF, Excel, or CSV formats
-5. System provides pre-built report templates for common needs
-6. Report generation completes within 30 seconds for standard queries
+1. Query appointments with filters: date range, doctor_id, status
+2. Aggregate queries: COUNT by status, GROUP BY doctor_id
+3. Query users: COUNT active patients/doctors
+4. Simple SELECT statements with WHERE clauses
 
 **Priority:** Low
 
-**Story Points:** 13
-
-**Notes:**
-- Consider implementing scheduled automated reports
-- Ensure sensitive data is properly anonymized in reports
+**Story Points:** 5
 
 ---
 
@@ -170,23 +117,17 @@ _As an admin, I want to perform data backups and restorations, so that I can pro
 
 #### **US-A008: Manage Doctor Profiles**
 **Title:**
-_As an admin, I want to create and update doctor profiles including specializations and availability, so that patients can find and book appointments with appropriate healthcare providers._
+_As an admin, I want to create and update doctor profiles, so that patients can find and book appointments._
 
 **Acceptance Criteria:**
-1. Admin can create doctor profiles with name, specialization, qualifications
-2. Admin can upload doctor photos and credentials
-3. Admin can set default working hours for each doctor
-4. Admin can assign doctors to specific departments or clinics
-5. Doctor profiles are immediately visible to patients after activation
-6. Profile changes are logged for audit purposes
+1. Admin can INSERT/UPDATE doctors table
+2. Fields: full_name, email, password_hash, phone, specialization, bio, profile_photo_url, consultation_fee, years_of_experience
+3. Can set is_active flag
+4. Changes logged in audit_logs
 
 **Priority:** Medium
 
-**Story Points:** 8
-
-**Notes:**
-- Validate medical license numbers against official databases
-- Allow doctors to update their own profiles with admin approval
+**Story Points:** 3
 
 ---
 
@@ -200,20 +141,14 @@ _As a patient, I want to create a new account with my personal information, so t
 
 **Acceptance Criteria:**
 1. Patient can access registration form from the home page
-2. Required fields include: first name, last name, email, password, phone number, date of birth
+2. Required fields include: full_name, email, password, phone, date_of_birth, gender, address
 3. Email validation ensures valid format and prevents duplicate registrations
-4. Password must meet security requirements (minimum 8 characters, mixed case, numbers)
-5. Patient receives confirmation email with account activation link
-6. Patient is redirected to dashboard after successful registration
+4. Password must meet security requirements (minimum 8 characters)
+5. Patient is redirected to dashboard after successful registration
 
 **Priority:** High
 
 **Story Points:** 5
-
-**Notes:**
-- Implement CAPTCHA to prevent automated registrations
-- Consider adding optional emergency contact information
-- Comply with age verification requirements for minors
 
 ---
 
@@ -224,18 +159,12 @@ _As a patient, I want to securely login to my account, so that I can access my a
 **Acceptance Criteria:**
 1. Login form accepts email and password
 2. System validates credentials against database
-3. Failed login attempts are limited to 5 attempts before temporary lockout
-4. Patient is redirected to their dashboard upon successful login
-5. "Remember me" option keeps patient logged in for 30 days
-6. "Forgot password" link allows password reset via email
+3. Patient is redirected to their dashboard upon successful login
+4. System logs login attempts in audit_logs
 
 **Priority:** High
 
 **Story Points:** 3
-
-**Notes:**
-- Implement two-factor authentication for enhanced security
-- Log all login attempts for security monitoring
 
 ---
 
@@ -244,20 +173,14 @@ _As a patient, I want to securely login to my account, so that I can access my a
 _As a patient, I want to update my personal information and contact details, so that my records remain accurate and up-to-date._
 
 **Acceptance Criteria:**
-1. Patient can edit profile fields (name, phone, address, emergency contact)
-2. Email changes require verification via confirmation email
-3. Password changes require current password for security
-4. Profile photo can be uploaded (max 5MB, jpg/png format)
-5. Changes are saved with confirmation message
-6. Updated information is reflected immediately across the system
+1. Patient can edit profile fields (full_name, phone, address, allergies)
+2. Password changes require current password for security
+3. Changes are saved with confirmation message
+4. Updated information is reflected immediately (updated_at timestamp)
 
 **Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Validate phone number format based on country code
-- Consider adding medical history fields (allergies, medications)
+**Story Points:** 3
 
 ---
 
@@ -268,20 +191,15 @@ _As a patient, I want to update my personal information and contact details, so 
 _As a patient, I want to search for doctors by specialization, name, or availability, so that I can find the most suitable healthcare provider for my needs._
 
 **Acceptance Criteria:**
-1. Search interface allows filtering by specialization, name, location
-2. Search results display doctor name, photo, specialization, rating
-3. Search results show doctor availability (next available slot)
-4. Patient can view detailed doctor profiles from search results
-5. Search results load within 2 seconds
-6. No results message appears when no doctors match criteria
+1. Search interface allows filtering by specialization and name
+2. Search results display doctor name, specialization, years_of_experience
+3. Search results show doctor availability based on doctor_schedules
+4. Patient can view detailed doctor profiles (bio, consultation_fee)
+5. Only active doctors (is_active = TRUE) appear in results
 
 **Priority:** Medium
 
-**Story Points:** 8
-
-**Notes:**
-- Implement auto-complete for doctor names and specializations
-- Add sorting options (by rating, availability, distance)
+**Story Points:** 5
 
 ---
 
@@ -290,20 +208,16 @@ _As a patient, I want to search for doctors by specialization, name, or availabi
 _As a patient, I want to book an appointment with a doctor at an available time slot, so that I can receive medical consultation at a convenient time._
 
 **Acceptance Criteria:**
-1. Patient selects doctor and views available time slots in calendar view
-2. Only available time slots are selectable
-3. Patient can add appointment reason/notes during booking
-4. System prevents double-booking of the same time slot
-5. Confirmation message displays appointment details upon successful booking
-6. Patient receives confirmation email with appointment details
+1. Patient selects doctor and views available time slots based on doctor_schedules
+2. System checks schedule_exceptions to exclude blocked times
+3. Patient can add appointment_reason and patient_notes during booking
+4. System prevents double-booking via UNIQUE constraint (doctor_id, appointment_date, appointment_time)
+5. Appointment status defaults to 'scheduled'
+6. created_at timestamp is automatically recorded
 
 **Priority:** High
 
 **Story Points:** 8
-
-**Notes:**
-- Implement time zone handling for multi-location systems
-- Consider adding virtual/telemedicine appointment options
 
 ---
 
@@ -312,20 +226,15 @@ _As a patient, I want to book an appointment with a doctor at an available time 
 _As a patient, I want to view a list of all my upcoming and past appointments, so that I can keep track of my medical consultations._
 
 **Acceptance Criteria:**
-1. Appointments are displayed in chronological order
-2. Upcoming appointments are shown separately from past appointments
-3. Each appointment shows: date, time, doctor name, specialization, status
-4. Patient can filter appointments by status (upcoming, completed, cancelled)
-5. Calendar view option shows appointments on a monthly calendar
-6. Patient can access appointment details by clicking on any appointment
+1. Appointments are displayed in chronological order (ORDER BY appointment_date, appointment_time)
+2. Each appointment shows: appointment_date, appointment_time, doctor name, status
+3. Patient can filter by status (scheduled, confirmed, completed, cancelled, no_show)
+4. Shows appointment_reason, patient_notes, and consultation_notes (if completed)
+5. Query filters by patient_id
 
 **Priority:** High
 
-**Story Points:** 5
-
-**Notes:**
-- Add export functionality to download appointment history
-- Show appointment status indicators (confirmed, pending, completed)
+**Story Points:** 3
 
 ---
 
@@ -334,20 +243,15 @@ _As a patient, I want to view a list of all my upcoming and past appointments, s
 _As a patient, I want to change the date or time of my scheduled appointment, so that I can accommodate changes in my schedule._
 
 **Acceptance Criteria:**
-1. Patient can click "Reschedule" button on appointment details page
-2. System displays available alternative time slots with the same doctor
-3. Patient can select new date and time from available options
-4. Confirmation required before finalizing reschedule
-5. Both patient and doctor receive notification of the change
-6. Rescheduling is only allowed up to 24 hours before appointment
+1. System validates 24-hour rule before allowing reschedule
+2. Patient selects new available time slot (checks doctor_schedules and schedule_exceptions)
+3. System updates appointment_date and appointment_time
+4. updated_at timestamp is automatically updated
+5. Change is logged in audit_logs
 
 **Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Track number of reschedules to prevent abuse
-- Consider implementing reschedule fee policy
+**Story Points:** 3
 
 ---
 
@@ -356,48 +260,21 @@ _As a patient, I want to change the date or time of my scheduled appointment, so
 _As a patient, I want to cancel an appointment I can no longer attend, so that the time slot becomes available for other patients._
 
 **Acceptance Criteria:**
-1. Patient can click "Cancel" button on appointment details page
-2. System prompts for cancellation reason (optional)
-3. Confirmation dialog prevents accidental cancellations
-4. Cancelled time slot becomes immediately available for other patients
-5. Both patient and doctor receive cancellation notifications
-6. Cancellation is only allowed up to 24 hours before appointment
+1. System validates 24-hour rule before allowing cancellation
+2. Patient can provide cancellation_reason (optional TEXT field)
+3. Status changes to 'cancelled'
+4. cancelled_at timestamp is recorded
+5. Change is logged in audit_logs
 
 **Priority:** Medium
 
-**Story Points:** 3
-
-**Notes:**
-- Implement cancellation policy with penalties for late cancellations
-- Track cancellation history for reporting purposes
-
----
-
-#### **US-P009: Receive Appointment Notifications**
-**Title:**
-_As a patient, I want to receive reminders about upcoming appointments, so that I don't miss my scheduled consultations._
-
-**Acceptance Criteria:**
-1. Email reminder sent 24 hours before appointment
-2. SMS reminder sent 2 hours before appointment (if phone provided)
-3. Notifications include appointment details and location
-4. Patient can manage notification preferences in settings
-5. Reminders include links to reschedule or cancel if needed
-6. System handles time zones correctly for notifications
-
-**Priority:** Low
-
-**Story Points:** 8
-
-**Notes:**
-- Consider implementing push notifications for mobile app
-- Allow patients to customize reminder timing preferences
+**Story Points:** 2
 
 ---
 
 ### Medical Records
 
-#### **US-P010: View Medical Records**
+#### **US-P009: View Prescriptions**
 **Title:**
 _As a patient, I want to access my medical records and appointment history, so that I can review my health information and treatment history._
 
@@ -450,20 +327,14 @@ _As a patient, I want to view prescriptions provided by my doctors, so that I ca
 _As a doctor, I want to securely login to my professional account, so that I can access my schedule and patient information._
 
 **Acceptance Criteria:**
-1. Doctor can login using email and password credentials
-2. System validates doctor credentials against database
-3. Failed login attempts are limited to 5 before account lockout
-4. Doctor is redirected to professional dashboard upon successful login
-5. Session timeout occurs after 30 minutes of inactivity for security
-6. Password reset option available via email verification
+1. Doctor can login using email and password_hash credentials
+2. System validates against doctors table
+3. Doctor is redirected to dashboard upon successful login
+4. Login action logged in audit_logs with user_type='doctor'
 
 **Priority:** High
 
 **Story Points:** 3
-
-**Notes:**
-- Implement two-factor authentication for enhanced security
-- Consider single sign-on (SSO) integration for hospital systems
 
 ---
 
@@ -472,20 +343,14 @@ _As a doctor, I want to securely login to my professional account, so that I can
 _As a doctor, I want to update my specialization, qualifications, and contact information, so that patients can make informed decisions when booking appointments._
 
 **Acceptance Criteria:**
-1. Doctor can edit profile fields (name, specialization, qualifications, bio)
-2. Profile photo can be uploaded (max 5MB, jpg/png format)
-3. Doctor can add/update credentials and certifications
-4. Contact information (phone, office location) can be modified
-5. Changes require admin approval before being publicly visible
-6. Profile updates are saved with confirmation message
+1. Doctor can edit: full_name, phone, specialization, bio, consultation_fee, years_of_experience
+2. Can update profile_photo_url
+3. Changes update updated_at timestamp automatically
+4. Profile changes logged in audit_logs
 
 **Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Verify credentials against medical licensing databases
-- Allow doctors to showcase specializations and areas of expertise
+**Story Points:** 3
 
 ---
 
@@ -496,20 +361,16 @@ _As a doctor, I want to update my specialization, qualifications, and contact in
 _As a doctor, I want to define my working hours and available time slots, so that patients can only book appointments during my available times._
 
 **Acceptance Criteria:**
-1. Doctor can set recurring weekly schedule (e.g., Mon-Fri 9AM-5PM)
-2. Time slot duration can be configured (15, 30, 45, 60 minutes)
-3. Doctor can set different schedules for different days
-4. Break times and lunch hours can be blocked out
-5. Changes to availability are reflected immediately in booking system
-6. System prevents appointment bookings outside defined hours
+1. Doctor creates records in doctor_schedules table
+2. Each record specifies: day_of_week (ENUM), start_time, end_time
+3. Multiple rows allow complex schedules (morning/afternoon shifts)
+4. is_available flag allows temporary disabling
+5. CHECK constraint enforces end_time > start_time
+6. Changes update updated_at timestamp
 
 **Priority:** High
 
-**Story Points:** 8
-
-**Notes:**
-- Support multiple appointment types with different durations
-- Allow templates for common schedule patterns
+**Story Points:** 5
 
 ---
 
@@ -518,20 +379,15 @@ _As a doctor, I want to define my working hours and available time slots, so tha
 _As a doctor, I want to block specific time slots for personal time or meetings, so that patients cannot book appointments during unavailable periods._
 
 **Acceptance Criteria:**
-1. Doctor can select specific dates and times to block
-2. Blocked slots are immediately unavailable for patient booking
-3. Doctor can add reason for blocking (personal, meeting, emergency)
-4. Blocked slots are visually distinct on the doctor's calendar
-5. Doctor can unblock slots if plans change
-6. Recurring blocks can be set (e.g., every Monday 9-10AM)
+1. Doctor creates record in schedule_exceptions table
+2. Specifies: exception_date, start_time, end_time, reason
+3. is_available = FALSE blocks time (default)
+4. CHECK constraint enforces end_time > start_time
+5. Indexed by (doctor_id, exception_date) for fast lookups
 
 **Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Add quick-block functionality for urgent schedule changes
-- Consider notification to admin when extensive blocking occurs
+**Story Points:** 3
 
 ---
 
@@ -540,20 +396,15 @@ _As a doctor, I want to block specific time slots for personal time or meetings,
 _As a doctor, I want to view my daily, weekly, and monthly appointment schedule, so that I can plan my workday and prepare for patient consultations._
 
 **Acceptance Criteria:**
-1. Schedule displays in day, week, and month views
-2. Each appointment shows patient name, appointment time, and reason
-3. Color coding indicates appointment status (confirmed, pending, completed)
-4. Doctor can print daily schedule for offline reference
-5. Navigation between dates is intuitive with calendar controls
-6. Schedule updates in real-time when new appointments are booked
+1. Query appointments by doctor_id
+2. Display: appointment_date, appointment_time, patient name, status, appointment_reason
+3. Filter by status (scheduled, confirmed, completed, cancelled, no_show)
+4. Show consultation_notes if status = 'completed'
+5. Order by appointment_date, appointment_time
 
 **Priority:** High
 
-**Story Points:** 8
-
-**Notes:**
-- Add filter options to view specific appointment types
-- Integrate with external calendar systems (Google Calendar, Outlook)
+**Story Points:** 3
 
 ---
 
@@ -564,20 +415,15 @@ _As a doctor, I want to view my daily, weekly, and monthly appointment schedule,
 _As a doctor, I want to view detailed information about each appointment including patient details, so that I can prepare for consultations and provide personalized care._
 
 **Acceptance Criteria:**
-1. Doctor can click any appointment to view full details
-2. Details include patient name, age, contact info, appointment reason
-3. Patient's previous appointment history is accessible
-4. Any patient notes or special requirements are displayed
-5. Doctor can see if patient is new or returning
-6. Emergency contact information is readily available
+1. Doctor views appointment with JOIN to patients table
+2. Displays: patient full_name, phone, date_of_birth, gender, allergies
+3. Shows: appointment_reason, patient_notes, duration_minutes
+4. Can access patient's appointment history (previous records by patient_id)
+5. Displays created_at, updated_at timestamps
 
 **Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Display patient allergies prominently for safety
-- Show relevant medical history summary for quick reference
+**Story Points:** 3
 
 ---
 
@@ -586,20 +432,15 @@ _As a doctor, I want to view detailed information about each appointment includi
 _As a doctor, I want to confirm, reschedule, or cancel appointments when necessary, so that I can manage unexpected schedule changes or emergencies._
 
 **Acceptance Criteria:**
-1. Doctor can confirm pending appointments with one click
-2. Doctor can propose alternative times for rescheduling
-3. Patient receives notification when doctor reschedules
-4. Cancellation requires reason selection and confirmation
-5. Cancelled slots become available for other patients
-6. System logs all schedule changes with timestamps
+1. Doctor updates status from 'scheduled' to 'confirmed'
+2. Can update appointment_date/appointment_time if rescheduling
+3. Can set status to 'cancelled' and add cancellation_reason
+4. All changes update updated_at timestamp
+5. Changes logged in audit_logs
 
 **Priority:** Medium
 
-**Story Points:** 5
-
-**Notes:**
-- Implement approval workflow for patient-requested changes
-- Track cancellation patterns for quality improvement
+**Story Points:** 3
 
 ---
 
@@ -608,20 +449,14 @@ _As a doctor, I want to confirm, reschedule, or cancel appointments when necessa
 _As a doctor, I want to mark appointments as completed after consultations, so that appointment records remain accurate and up-to-date._
 
 **Acceptance Criteria:**
-1. Doctor can mark appointment as complete from appointment details
-2. Completion prompts doctor to add consultation notes
-3. Completed appointments are moved to history section
-4. Completion time is automatically recorded
-5. Doctor can mark no-show appointments separately
-6. Statistics are updated based on completion status
+1. Doctor updates status to 'completed' or 'no_show'
+2. Can add consultation_notes (TEXT field)
+3. completed_at timestamp is recorded
+4. Change logged in audit_logs
 
-**Priority:** Low
+**Priority:** Medium
 
-**Story Points:** 3
-
-**Notes:**
-- Auto-complete appointments after scheduled end time passes
-- Add quick-complete option for efficient workflow
+**Story Points:** 2
 
 ---
 
@@ -632,20 +467,15 @@ _As a doctor, I want to mark appointments as completed after consultations, so t
 _As a doctor, I want to view patient medical history and previous appointment records, so that I can provide informed medical care and track patient progress._
 
 **Acceptance Criteria:**
-1. Doctor can search for patients by name or ID
-2. Patient records show complete appointment history
-3. Previous diagnoses, treatments, and outcomes are displayed
-4. Lab results and test reports are accessible
-5. Allergies and chronic conditions are prominently displayed
-6. Records are organized chronologically with most recent first
+1. Doctor searches patients by full_name or email
+2. View patient record: full_name, date_of_birth, gender, phone, address, allergies
+3. Query appointment history by patient_id
+4. View prescriptions from MongoDB by patientId
+5. Access logged in audit_logs for compliance
 
 **Priority:** Medium
 
-**Story Points:** 8
-
-**Notes:**
-- Implement secure access logging for HIPAA compliance
-- Add quick-access to frequently viewed patient records
+**Story Points:** 3
 
 ---
 
@@ -654,67 +484,34 @@ _As a doctor, I want to view patient medical history and previous appointment re
 _As a doctor, I want to create and add prescriptions for patients after consultations, so that patients receive proper medication instructions and treatment plans._
 
 **Acceptance Criteria:**
-1. Doctor can create prescription with medication name, dosage, frequency
-2. Drug database provides auto-complete for medication names
-3. System warns about potential drug interactions
-4. Doctor can add special instructions and duration
-5. Prescription is linked to the appointment record
-6. Patient receives notification when prescription is added
+1. Doctor creates prescription document in MongoDB
+2. Document includes: appointmentId, patientId, doctorId, prescriptionDate, expiryDate
+3. medications array contains: name, genericName, dosage, form, frequency, duration, quantity, instructions
+4. Can add diagnosis and doctorNotes fields
+5. status defaults to 'active'
+6. Denormalized patientName and doctorName for quick access
 
 **Priority:** High
 
-**Story Points:** 8
-
-**Notes:**
-- Integrate with pharmacy systems for electronic prescribing
-- Validate against patient allergy information
-- Include prescription templates for common medications
-
----
-
-#### **US-D011: Add Medical Notes**
-**Title:**
-_As a doctor, I want to add consultation notes and observations to patient records, so that I can maintain comprehensive medical documentation for continuity of care._
-
-**Acceptance Criteria:**
-1. Doctor can add free-text notes during or after appointment
-2. Notes support rich text formatting (bold, italic, lists)
-3. Notes are auto-saved to prevent data loss
-4. Doctor can attach images or documents to notes
-5. Notes are timestamped and attributed to the doctor
-6. Previous notes are easily accessible during consultation
-
-**Priority:** Low
-
 **Story Points:** 5
-
-**Notes:**
-- Implement voice-to-text for efficient note-taking
-- Add templates for common note types (follow-up, initial consultation)
 
 ---
 
 ### Dashboard and Analytics
 
-#### **US-D012: View Dashboard Statistics**
+#### **US-D011: View Dashboard Statistics**
 **Title:**
-_As a doctor, I want to view statistics about my appointments, patient visits, and schedule utilization, so that I can track my productivity and identify trends in patient care._
+_As a doctor, I want to view basic statistics about my appointments, so that I can track my schedule._
 
 **Acceptance Criteria:**
-1. Dashboard shows total appointments for current week/month
-2. Statistics include completed, cancelled, and no-show appointments
-3. Patient demographics are visualized with charts
-4. Schedule utilization percentage is displayed
-5. Trends are shown over time with graphs
-6. Dashboard updates daily with latest statistics
+1. COUNT appointments by status for current doctor
+2. Display totals: scheduled, confirmed, completed, cancelled, no_show
+3. Filter by date range using appointment_date
+4. Simple aggregation queries on appointments table
 
 **Priority:** Low
 
-**Story Points:** 8
-
-**Notes:**
-- Add export functionality for performance reports
-- Consider peer comparison statistics for benchmarking
+**Story Points:** 3
 
 ---
 
@@ -726,46 +523,41 @@ _As a doctor, I want to view statistics about my appointments, patient visits, a
 - US-P001: Register Account (5 pts)
 - US-P002: Login to System (3 pts)
 - US-P005: Book Appointment (8 pts)
-- US-P006: View My Appointments (5 pts)
+- US-P006: View My Appointments (3 pts)
 - US-D001: Login to System (3 pts)
-- US-D003: Set Availability (8 pts)
-- US-D005: View My Schedule (8 pts)
-- US-D010: Add Prescriptions (8 pts)
-- US-A001: Manage User Accounts (8 pts)
-- US-A002: Assign User Roles (5 pts)
-- US-A004: View System Dashboard (8 pts)
+- US-D003: Set Availability (5 pts)
+- US-D005: View My Schedule (3 pts)
+- US-D010: Add Prescriptions (5 pts)
+- US-A001: Manage User Accounts (5 pts)
+- US-A004: View System Dashboard (3 pts)
 
-**Total High Priority: 71 Story Points**
+**Total High Priority: 43 Story Points**
 
 #### **Medium Priority**
-- US-P003: Update Profile (5 pts)
-- US-P004: Search for Doctors (8 pts)
-- US-P007: Reschedule Appointment (5 pts)
-- US-P008: Cancel Appointment (3 pts)
-- US-P011: View Prescriptions (5 pts)
-- US-D002: Update Professional Profile (5 pts)
-- US-D004: Block Time Slots (5 pts)
-- US-D006: View Appointment Details (5 pts)
-- US-D007: Confirm or Reschedule Appointments (5 pts)
-- US-D009: Access Patient Records (8 pts)
-- US-A003: View User Activity (5 pts)
-- US-A005: Manage System Settings (8 pts)
-- US-A008: Manage Doctor Profiles (8 pts)
+- US-P003: Update Profile (3 pts)
+- US-P004: Search for Doctors (5 pts)
+- US-P007: Reschedule Appointment (3 pts)
+- US-P008: Cancel Appointment (2 pts)
+- US-P009: View Prescriptions (3 pts)
+- US-D002: Update Professional Profile (3 pts)
+- US-D004: Block Time Slots (3 pts)
+- US-D006: View Appointment Details (3 pts)
+- US-D007: Confirm or Reschedule Appointments (3 pts)
+- US-D008: Mark Appointment as Complete (2 pts)
+- US-D009: Access Patient Records (3 pts)
+- US-A002: Assign User Roles (3 pts)
+- US-A003: View User Activity (3 pts)
+- US-A006: Manage Doctor Profiles (3 pts)
 
-**Total Medium Priority: 75 Story Points**
+**Total Medium Priority: 42 Story Points**
 
 #### **Low Priority (Future Enhancements)**
-- US-P009: Receive Appointment Notifications (8 pts)
-- US-P010: View Medical Records (8 pts)
-- US-D008: Mark Appointment as Complete (3 pts)
-- US-D011: Add Medical Notes (5 pts)
-- US-D012: View Dashboard Statistics (8 pts)
-- US-A006: Generate Reports (13 pts)
-- US-A007: Backup and Restore Data (13 pts)
+- US-D011: View Dashboard Statistics (3 pts)
+- US-A005: Generate Reports (5 pts)
 
-**Total Low Priority: 58 Story Points**
+**Total Low Priority: 8 Story Points**
 
-### **Grand Total: 204 Story Points**
+### **Grand Total: 93 Story Points**
 
 ---
 
@@ -785,9 +577,3 @@ _As a doctor, I want to view statistics about my appointments, patient visits, a
 4. Document API changes and database schema updates
 5. Conduct code reviews before marking stories complete
 6. Update user documentation as features are implemented
-
----
-
-## Version History
-- **v2.0** - Updated with detailed templates including acceptance criteria, story points, and notes (December 24, 2025)
-- **v1.0** - Initial user stories documentation (December 24, 2025)
