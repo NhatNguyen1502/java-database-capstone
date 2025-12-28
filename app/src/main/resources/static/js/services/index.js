@@ -1,58 +1,158 @@
-/*
-  Import the openModal function to handle showing login popups/modals
-  Import the base API URL from the config file
-  Define constants for the admin and doctor login API endpoints using the base URL
+// index.js - Handle login modals and authentication
 
-  Use the window.onload event to ensure DOM elements are available after page load
-  Inside this function:
-    - Select the "adminLogin" and "doctorLogin" buttons using getElementById
-    - If the admin login button exists:
-        - Add a click event listener that calls openModal('adminLogin') to show the admin login modal
-    - If the doctor login button exists:
-        - Add a click event listener that calls openModal('doctorLogin') to show the doctor login modal
+// Open modal for login
+function openModal(type) {
+  console.log('Opening modal for:', type);
+  const modal = document.getElementById('modal');
+  const modalBody = document.getElementById('modal-body');
+  
+  if (!modal || !modalBody) {
+    console.error('Modal elements not found');
+    return;
+  }
 
+  let modalContent = '';
 
-  Define a function named adminLoginHandler on the global window object
-  This function will be triggered when the admin submits their login credentials
+  if (type === 'admin') {
+    modalContent = '<h2>Admin Login</h2>' +
+      '<form onsubmit="event.preventDefault(); adminLoginHandler();">' +
+        '<input type="text" id="adminUsername" class="input-field" placeholder="Username or Email" required />' +
+        '<input type="password" id="adminPassword" class="input-field" placeholder="Password" required />' +
+        '<button type="submit" class="dashboard-btn">Login</button>' +
+      '</form>';
+  } else if (type === 'doctor') {
+    modalContent = '<h2>Doctor Login</h2>' +
+      '<form onsubmit="event.preventDefault(); doctorLoginHandler();">' +
+        '<input type="email" id="doctorEmail" class="input-field" placeholder="Email" required />' +
+        '<input type="password" id="doctorPassword" class="input-field" placeholder="Password" required />' +
+        '<button type="submit" class="dashboard-btn">Login</button>' +
+      '</form>';
+  } else if (type === 'patient') {
+    modalContent = '<h2>Patient Login</h2>' +
+      '<form onsubmit="event.preventDefault(); patientLoginHandler();">' +
+        '<input type="email" id="patientEmail" class="input-field" placeholder="Email" required />' +
+        '<input type="password" id="patientPassword" class="input-field" placeholder="Password" required />' +
+        '<button type="submit" class="dashboard-btn">Login</button>' +
+      '</form>';
+  }
 
-  Step 1: Get the entered username and password from the input fields
-  Step 2: Create an admin object with these credentials
+  modalBody.innerHTML = modalContent;
+  modal.style.display = 'block';
+  console.log('Modal opened');
+}
 
-  Step 3: Use fetch() to send a POST request to the ADMIN_API endpoint
-    - Set method to POST
-    - Add headers with 'Content-Type: application/json'
-    - Convert the admin object to JSON and send in the body
+// Close modal
+function closeModal() {
+  const modal = document.getElementById('modal');
+  if (modal) {
+    modal.style.display = 'none';
+  }
+}
 
-  Step 4: If the response is successful:
-    - Parse the JSON response to get the token
-    - Store the token in localStorage
-    - Call selectRole('admin') to proceed with admin-specific behavior
+// Admin login handler
+async function adminLoginHandler() {
+  const username = document.getElementById('adminUsername').value;
+  const password = document.getElementById('adminPassword').value;
 
-  Step 5: If login fails or credentials are invalid:
-    - Show an alert with an error message
+  try {
+    const response = await fetch('/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
 
-  Step 6: Wrap everything in a try-catch to handle network or server errors
-    - Show a generic error message if something goes wrong
+    const data = await response.json();
 
+    if (data.success && data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userRole', 'admin');
+      window.location.href = '/admin/dashboard';
+    } else {
+      alert('Login failed: ' + (data.message || 'Invalid credentials'));
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    alert('Login failed. Please try again.');
+  }
+}
 
-  Define a function named doctorLoginHandler on the global window object
-  This function will be triggered when a doctor submits their login credentials
+// Doctor login handler
+async function doctorLoginHandler() {
+  const username = document.getElementById('doctorEmail').value;
+  const password = document.getElementById('doctorPassword').value;
 
-  Step 1: Get the entered email and password from the input fields
-  Step 2: Create a doctor object with these credentials
+  try {
+    const response = await fetch('/doctor/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
 
-  Step 3: Use fetch() to send a POST request to the DOCTOR_API endpoint
-    - Include headers and request body similar to admin login
+    const data = await response.json();
 
-  Step 4: If login is successful:
-    - Parse the JSON response to get the token
-    - Store the token in localStorage
-    - Call selectRole('doctor') to proceed with doctor-specific behavior
+    if (data.success && data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userRole', 'doctor');
+      window.location.href = '/doctor/dashboard';
+    } else {
+      alert('Login failed: ' + (data.message || 'Invalid credentials'));
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    alert('Login failed. Please try again.');
+  }
+}
 
-  Step 5: If login fails:
-    - Show an alert for invalid credentials
+// Patient login handler
+async function patientLoginHandler() {
+  const username = document.getElementById('patientEmail').value;
+  const password = document.getElementById('patientPassword').value;
 
-  Step 6: Wrap in a try-catch block to handle errors gracefully
-    - Log the error to the console
-    - Show a generic error message
-*/
+  try {
+    const response = await fetch('/patient/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (data.success && data.token) {
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userRole', 'loggedPatient');
+      window.location.href = '/pages/loggedPatientDashboard.html';
+    } else {
+      alert('Login failed: ' + (data.message || 'Invalid credentials'));
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    alert('Login failed. Please try again.');
+  }
+}
+
+// Setup modal close button
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('DOM loaded, setting up modal handlers');
+  
+  const closeBtn = document.getElementById('closeModal');
+  if (closeBtn) {
+    closeBtn.onclick = closeModal;
+  }
+
+  // Close modal when clicking outside
+  const modal = document.getElementById('modal');
+  if (modal) {
+    modal.onclick = function(event) {
+      if (event.target === modal) {
+        closeModal();
+      }
+    };
+  }
+});
+
+// Make functions globally available
+window.openModal = openModal;
+window.closeModal = closeModal;
+window.adminLoginHandler = adminLoginHandler;
+window.doctorLoginHandler = doctorLoginHandler;
+window.patientLoginHandler = patientLoginHandler;

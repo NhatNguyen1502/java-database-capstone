@@ -1,65 +1,70 @@
-/* This is the style sheet for the doctorDashboard.html */
-/* 
-**Table Header (`.table-header`)**
+﻿/* Doctor Dashboard Styles */
 
-* Set font size to `24px` for clear emphasis.
-* Use a dark teal color (`#015c5d`) for consistency with the theme.
-* Add `30px` bottom margin and remove right margin.
+.doctor-content-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 25px;
+}
 
-**Table Styling (`table`)**
+.patient-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border-left: 4px solid #015c5d;
+}
 
-* Make the table full width (`100%`).
-* Collapse borders for clean lines.
-* Use a `sans-serif` font.
-* Add `20px` top margin for spacing.
+.patient-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
 
-**Table Head (`thead`)**
+.patient-card h3 {
+    color: #003e3e;
+    font-size: 20px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #f0f0f0;
+}
 
-* Set a very light dark background (`#33333310`) for header row.
-* Use white text color (`#fff`).
+.patient-card p {
+    margin: 8px 0;
+    color: #666;
+    font-size: 14px;
+}
 
-**Table Cells (`td, th`)**
+.appointment-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
 
-* Apply padding of `12px 16px` for spacing.
-* Center-align the text.
-* Add a subtle bottom border (`1px solid #ddd`).
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+}
 
-**Table Row Styling**
+.status-confirmed {
+    background: #d1ecf1;
+    color: #0c5460;
+}
 
-* Alternate row colors for better readability:
+.status-completed {
+    background: #d4edda;
+    color: #155724;
+}
 
-  * Even rows: semi-transparent light grey (`#f9f9f959`).
-  * Odd rows: soft white background (`#ffffffc0`).
-* On hover: highlight row with a light teal overlay (`#015c5d39`).
+.status-cancelled {
+    background: #f8d7da;
+    color: #721c24;
+}
 
-**Prescription Button (`.prescription-btn`)**
-
-* Set size to `30px x 30px`.
-* Make it interactive with a pointer cursor.
-* Add transition effects for scale and brightness on hover.
-* On hover:
-
-  * Slightly enlarge (`scale(1.1)`)
-  * Brighten appearance
-* On click: slightly shrink (`scale(0.95)`).
-
-**No Record Message (`.noPatientRecord`)**
-
-* Use a `16px` italic grey font to indicate no data gently.
-
-**Today Button (`.today-btn`)**
-
-* Add right margin (`10px`).
-* Add padding (`10px`).
-* Set background color to teal green (`#015c5d`).
-
-**Date Picker (`.date-picker`)**
-
-* Add left margin (`10px`) and top margin (`13px`).
-* Round corners with `8px` radius.
-* Add padding (`10px`) and set fixed height (`30px`).
-
----
-
-Let me know if you'd like a consolidated style guide for the entire HospitalCRM frontend.
- */
+@media (max-width: 768px) {
+    .doctor-content-grid {
+        grid-template-columns: 1fr;
+    }
+}

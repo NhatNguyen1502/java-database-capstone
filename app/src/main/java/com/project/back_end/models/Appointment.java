@@ -61,7 +61,7 @@ public class Appointment {
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Status status = Status.scheduled;
+    private AppointmentStatus status = AppointmentStatus.scheduled;
 
     @Column(name = "appointment_reason", columnDefinition = "TEXT")
     private String appointmentReason;
@@ -89,7 +89,7 @@ public class Appointment {
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
-    public enum Status {
+    public enum AppointmentStatus {
         scheduled, confirmed, completed, cancelled, no_show
     }
 }

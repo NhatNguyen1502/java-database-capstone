@@ -1,53 +1,170 @@
-/* this is the style sheet file for index.htlm  */
+/* this is the style sheet file for index.html */
 
-/* 
-**Global Reset (`*`)**
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-* Remove all default margin and padding.
-* Use `border-box` for sizing to include padding and border in element size.
+/* Base */
+html, body {
+    height: 100%;
+    font-family: 'Roboto', Arial, sans-serif;
+}
 
-**Base (`html, body`)**
+/* Layout Wrapper */
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
 
-* Set height to 100% for full viewport layout.
-* Use the `'Roboto'` sans-serif font for modern, clean typography.
+/* Main Section */
+.main-content {
+    flex-grow: 1;
+    padding: 60px 40px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    text-align: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background-attachment: fixed;
+}
 
-**Layout Wrapper (`.wrapper`)**
+/* Heading */
+h2 {
+    font-size: 48px;
+    margin-bottom: 50px;
+    color: #ffffff;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+}
 
-* Use a vertical flexbox layout.
-* Ensure the wrapper covers at least the full height of the screen (`min-height: 100vh`).
+/* Role Selection Container */
+.role-selection {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+}
 
-**Heading (`h2`)**
+/* Role Button Base */
+.role-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 200px;
+    height: 200px;
+    padding: 20px;
+    border: none;
+    border-radius: 20px;
+    background: #ffffff;
+    color: #333;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
 
-* Set a large font size (`48px`) for prominence.
-* Add a bottom margin of `50px` for spacing.
-* Use a dark teal color (`#003e3e`).
-* Make the font bold and use a blended font stack (`'Alegreya', 'Roboto', sans-serif`) for elegant styling.
+.role-btn:hover {
+    transform: translateY(-10px) scale(1.05);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25);
+}
 
-**Main Section (`.main-content`)**
+.role-btn:active {
+    transform: translateY(-5px) scale(1.02);
+}
 
-* Allow the section to grow to fill space with `flex-grow: 1`.
-* Add `40px` of internal padding.
-* Center content both horizontally and vertically using `justify-content` and `align-items`.
-* Display items in a column direction.
-* Center all text.
-* Apply a full-screen background image with:
+/* Role Icon */
+.role-icon {
+    font-size: 64px;
+    margin-bottom: 15px;
+}
 
-  * `cover` size
-  * `center` positioning
-  * no repeat
-  * `fixed` attachment to keep image still during scroll
+.role-text {
+    font-size: 20px;
+    font-weight: 600;
+}
 
-**Buttons (`button`)**
+/* Individual Role Colors */
+.admin-btn {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+}
 
-* Style with a teal green background (`#015c5d`) and white text.
-* Remove borders and round the corners (`12px`).
-* Use `10px 20px` padding and set width to `200px`.
-* Add a top margin of `10px` for spacing.
-* Enable pointer cursor and readable font size (`16px`).
-* On hover, change background color to bold red (`#A62B1F`).
+.admin-btn:hover {
+    background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+}
 
-**Dashboard Buttons (`.dashboard-btn`)**
+.patient-btn {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+}
 
-* Use the same base green background (`#015c5d`) as the default button.
-* On hover, darken the background to deep teal (`#003e3e`) for visual feedback.
- */
+.patient-btn:hover {
+    background: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+}
+
+.doctor-btn {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.doctor-btn:hover {
+    background: linear-gradient(135deg, #38f9d7 0%, #43e97b 100%);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    h2 {
+        font-size: 36px;
+        margin-bottom: 30px;
+    }
+
+    .role-selection {
+        gap: 20px;
+    }
+
+    .role-btn {
+        width: 160px;
+        height: 160px;
+    }
+
+    .role-icon {
+        font-size: 48px;
+    }
+
+    .role-text {
+        font-size: 16px;
+    }
+
+    .main-content {
+        padding: 40px 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    h2 {
+        font-size: 28px;
+    }
+
+    .role-btn {
+        width: 140px;
+        height: 140px;
+    }
+
+    .role-icon {
+        font-size: 40px;
+        margin-bottom: 10px;
+    }
+
+    .role-text {
+        font-size: 14px;
+    }
+}
+

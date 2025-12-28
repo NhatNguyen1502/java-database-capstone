@@ -1,58 +1,127 @@
 package com.project.back_end.services;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.project.back_end.DTO.ApiResponse;
+import com.project.back_end.DTO.AppointmentListResponse;
+import com.project.back_end.DTO.LoginResponse;
+import com.project.back_end.DTO.PrescriptionListResponse;
+import com.project.back_end.models.Appointment;
+import com.project.back_end.models.Patient;
+import com.project.back_end.models.Prescription;
+import com.project.back_end.repo.AppointmentRepository;
+import com.project.back_end.repo.PatientRepository;
+import com.project.back_end.repo.PrescriptionRepository;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
 public class PatientService {
-// 1. **Add @Service Annotation**:
-//    - The `@Service` annotation is used to mark this class as a Spring service component. 
-//    - It will be managed by Spring's container and used for business logic related to patients and appointments.
-//    - Instruction: Ensure that the `@Service` annotation is applied above the class declaration.
 
-// 2. **Constructor Injection for Dependencies**:
-//    - The `PatientService` class has dependencies on `PatientRepository`, `AppointmentRepository`, and `TokenService`.
-//    - These dependencies are injected via the constructor to maintain good practices of dependency injection and testing.
-//    - Instruction: Ensure constructor injection is used for all the required dependencies.
+    private final TokenService tokenService;
+    private final PatientRepository patientRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final PrescriptionRepository prescriptionRepository;
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-// 3. **createPatient Method**:
-//    - Creates a new patient in the database. It saves the patient object using the `PatientRepository`.
-//    - If the patient is successfully saved, the method returns `1`; otherwise, it logs the error and returns `0`.
-//    - Instruction: Ensure that error handling is done properly and exceptions are caught and logged appropriately.
+    /**
+     * Register new patient
+     */
+    @Transactional
+    public LoginResponse<Patient> registerPatient(Patient patient) {
+        try {
+            // Check if email or username already exists
+            if (patientRepository.findByEmail(patient.getEmail()) != null) {
+                return LoginResponse.error("Email already registered");
+            }
+            if (patientRepository.findByUsername(patient.getUsername()) != null) {
+                return LoginResponse.error("Username already taken");
+            }
 
-// 4. **getPatientAppointment Method**:
-//    - Retrieves a list of appointments for a specific patient, based on their ID.
-//    - The appointments are then converted into `AppointmentDTO` objects for easier consumption by the API client.
-//    - This method is marked as `@Transactional` to ensure database consistency during the transaction.
-//    - Instruction: Ensure that appointment data is properly converted into DTOs and the method handles errors gracefully.
+            // Hash password
+            patient.setPasswordHash(passwordEncoder.encode(patient.getPasswordHash()));
+            patient.setIsActive(true);
 
-// 5. **filterByCondition Method**:
-//    - Filters appointments for a patient based on the condition (e.g., "past" or "future").
-//    - Retrieves appointments with a specific status (0 for future, 1 for past) for the patient.
-//    - Converts the appointments into `AppointmentDTO` and returns them in the response.
-//    - Instruction: Ensure the method correctly handles "past" and "future" conditions, and that invalid conditions are caught and returned as errors.
+            Patient saved = patientRepository.save(patient);
+            String token = tokenService.generateToken(saved.getEmail());
 
-// 6. **filterByDoctor Method**:
-//    - Filters appointments for a patient based on the doctor's name.
-//    - It retrieves appointments where the doctor’s name matches the given value, and the patient ID matches the provided ID.
-//    - Instruction: Ensure that the method correctly filters by doctor's name and patient ID and handles any errors or invalid cases.
+            return LoginResponse.success(token, saved);
+        } catch (Exception e) {
+            return LoginResponse.error("Error: " + e.getMessage());
+        }
+    }
 
-// 7. **filterByDoctorAndCondition Method**:
-//    - Filters appointments based on both the doctor's name and the condition (past or future) for a specific patient.
-//    - This method combines filtering by doctor name and appointment status (past or future).
-//    - Converts the appointments into `AppointmentDTO` objects and returns them in the response.
-//    - Instruction: Ensure that the filter handles both doctor name and condition properly, and catches errors for invalid input.
+    /**
+     * Get patient by ID
+     */
+    public Patient getPatientById(Long id) {
+        return patientRepository.findById(id).orElse(null);
+    }
 
-// 8. **getPatientDetails Method**:
-//    - Retrieves patient details using the `tokenService` to extract the patient's email from the provided token.
-//    - Once the email is extracted, it fetches the corresponding patient from the `patientRepository`.
-//    - It returns the patient's information in the response body.
-    //    - Instruction: Make sure that the token extraction process works correctly and patient details are fetched properly based on the extracted email.
+    /**
+     * Update patient profile
+     */
+    @Transactional
+    public ApiResponse<Patient> updatePatient(Patient patient) {
+        try {
+            Optional<Patient> existing = patientRepository.findById(patient.getId());
+            if (existing.isEmpty()) {
+                return ApiResponse.error("Patient not found");
+            }
 
-// 9. **Handling Exceptions and Errors**:
-//    - The service methods handle exceptions using try-catch blocks and log any issues that occur. If an error occurs during database operations, the service responds with appropriate HTTP status codes (e.g., `500 Internal Server Error`).
-//    - Instruction: Ensure that error handling is consistent across the service, with proper logging and meaningful error messages returned to the client.
+            // Don't allow email/username change if already taken by another user
+            Patient existingByEmail = patientRepository.findByEmail(patient.getEmail());
+            if (existingByEmail != null && !existingByEmail.getId().equals(patient.getId())) {
+                return ApiResponse.error("Email already in use");
+            }
 
-// 10. **Use of DTOs (Data Transfer Objects)**:
-//    - The service uses `AppointmentDTO` to transfer appointment-related data between layers. This ensures that sensitive or unnecessary data (e.g., password or private patient information) is not exposed in the response.
-//    - Instruction: Ensure that DTOs are used appropriately to limit the exposure of internal data and only send the relevant fields to the client.
+            Patient saved = patientRepository.save(patient);
+            return ApiResponse.success("Patient profile updated successfully", saved);
+        } catch (Exception e) {
+            return ApiResponse.error("Error: " + e.getMessage());
+        }
+    }
 
+    /**
+     * Get patient appointments
+     */
+    public AppointmentListResponse getPatientAppointments(Long patientId) {
+        List<Appointment> appointments = appointmentRepository.findByPatientIdOrderByAppointmentDateDesc(patientId);
+        return AppointmentListResponse.of(appointments);
+    }
 
+    /**
+     * Filter patient appointments
+     */
+    public AppointmentListResponse filterPatientAppointments(Long patientId, String status, String dateFrom, String dateTo) {
+        List<Appointment> appointments;
+        
+        if (status != null && !status.isEmpty()) {
+            Appointment.AppointmentStatus statusEnum = Appointment.AppointmentStatus.valueOf(status.toLowerCase());
+            appointments = appointmentRepository.findByPatientIdAndStatus(patientId, statusEnum);
+        } else if (dateFrom != null && dateTo != null) {
+            LocalDate from = LocalDate.parse(dateFrom);
+            LocalDate to = LocalDate.parse(dateTo);
+            appointments = appointmentRepository.findByPatientIdAndAppointmentDateBetween(patientId, from, to);
+        } else {
+            appointments = appointmentRepository.findByPatientIdOrderByAppointmentDateDesc(patientId);
+        }
+        
+        return AppointmentListResponse.of(appointments);
+    }
 
+    /**
+     * Get patient prescriptions
+     */
+    public PrescriptionListResponse getPatientPrescriptions(Long patientId) {
+        List<Prescription> prescriptions = prescriptionRepository.findByPatientId(patientId);
+        return PrescriptionListResponse.of(prescriptions);
+    }
 }

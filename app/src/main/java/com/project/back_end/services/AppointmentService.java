@@ -1,45 +1,164 @@
 package com.project.back_end.services;
 
+import com.project.back_end.DTO.ApiResponse;
+import com.project.back_end.DTO.AppointmentListResponse;
+import com.project.back_end.DTO.AvailabilityResponse;
+import com.project.back_end.DTO.MessageResponse;
+import com.project.back_end.models.Appointment;
+import com.project.back_end.repo.AppointmentRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.util.List;
+import java.util.Optional;
+
+@Service
+@RequiredArgsConstructor
 public class AppointmentService {
-// 1. **Add @Service Annotation**:
-//    - To indicate that this class is a service layer class for handling business logic.
-//    - The `@Service` annotation should be added before the class declaration to mark it as a Spring service component.
-//    - Instruction: Add `@Service` above the class definition.
 
-// 2. **Constructor Injection for Dependencies**:
-//    - The `AppointmentService` class requires several dependencies like `AppointmentRepository`, `Service`, `TokenService`, `PatientRepository`, and `DoctorRepository`.
-//    - These dependencies should be injected through the constructor.
-//    - Instruction: Ensure constructor injection is used for proper dependency management in Spring.
+    private final AppointmentRepository appointmentRepository;
 
-// 3. **Add @Transactional Annotation for Methods that Modify Database**:
-//    - The methods that modify or update the database should be annotated with `@Transactional` to ensure atomicity and consistency of the operations.
-//    - Instruction: Add the `@Transactional` annotation above methods that interact with the database, especially those modifying data.
+    /**
+     * Check doctor availability
+     */
+    public AvailabilityResponse checkDoctorAvailability(Long doctorId, String date, String time) {
+        LocalDate appointmentDate = LocalDate.parse(date);
+        LocalTime appointmentTime = LocalTime.parse(time);
+        
+        // Check if there's an existing appointment at this time
+        boolean isBooked = appointmentRepository.existsByDoctorIdAndAppointmentDateAndAppointmentTime(
+            doctorId, appointmentDate, appointmentTime);
+        
+        return AvailabilityResponse.of(!isBooked);
+    }
 
-// 4. **Book Appointment Method**:
-//    - Responsible for saving the new appointment to the database.
-//    - If the save operation fails, it returns `0`; otherwise, it returns `1`.
-//    - Instruction: Ensure that the method handles any exceptions and returns an appropriate result code.
+    /**
+     * Book appointment
+     */
+    @Transactional
+    public ApiResponse<Appointment> bookAppointment(Appointment appointment) {
+        try {
+            // Check availability
+            boolean isBooked = appointmentRepository.existsByDoctorIdAndAppointmentDateAndAppointmentTime(
+                appointment.getDoctor().getId(), 
+                appointment.getAppointmentDate(), 
+                appointment.getAppointmentTime()
+            );
 
-// 5. **Update Appointment Method**:
-//    - This method is used to update an existing appointment based on its ID.
-//    - It validates whether the patient ID matches, checks if the appointment is available for updating, and ensures that the doctor is available at the specified time.
-//    - If the update is successful, it saves the appointment; otherwise, it returns an appropriate error message.
-//    - Instruction: Ensure proper validation and error handling is included for appointment updates.
+            if (isBooked) {
+                return ApiResponse.error("Time slot already booked");
+            }
 
-// 6. **Cancel Appointment Method**:
-//    - This method cancels an appointment by deleting it from the database.
-//    - It ensures the patient who owns the appointment is trying to cancel it and handles possible errors.
-//    - Instruction: Make sure that the method checks for the patient ID match before deleting the appointment.
+            appointment.setStatus(Appointment.AppointmentStatus.scheduled);
+            Appointment saved = appointmentRepository.save(appointment);
+            
+            return ApiResponse.success("Appointment booked successfully", saved);
+        } catch (Exception e) {
+            return ApiResponse.error("Error: " + e.getMessage());
+        }
+    }
 
-// 7. **Get Appointments Method**:
-//    - This method retrieves a list of appointments for a specific doctor on a particular day, optionally filtered by the patient's name.
-//    - It uses `@Transactional` to ensure that database operations are consistent and handled in a single transaction.
-//    - Instruction: Ensure the correct use of transaction boundaries, especially when querying the database for appointments.
+    /**
+     * Get appointment by ID
+     */
+    public Appointment getAppointmentById(Long id) {
+        return appointmentRepository.findById(id).orElse(null);
+    }
 
-// 8. **Change Status Method**:
-//    - This method updates the status of an appointment by changing its value in the database.
-//    - It should be annotated with `@Transactional` to ensure the operation is executed in a single transaction.
-//    - Instruction: Add `@Transactional` before this method to ensure atomicity when updating appointment status.
+    /**
+     * Update appointment
+     */
+    @Transactional
+    public ApiResponse<Appointment> updateAppointment(Appointment appointment) {
+        try {
+            if (appointmentRepository.findById(appointment.getId()).isEmpty()) {
+                return ApiResponse.error("Appointment not found");
+            }
 
+            Appointment saved = appointmentRepository.save(appointment);
+            return ApiResponse.success("Appointment updated successfully", saved);
+        } catch (Exception e) {
+            return ApiResponse.error("Error: " + e.getMessage());
+        }
+    }
 
+    /**
+     * Reschedule appointment
+     */
+    @Transactional
+    public ApiResponse<Appointment> rescheduleAppointment(Long id, String date, String time) {
+        try {
+            Optional<Appointment> optionalAppointment = appointmentRepository.findById(id);
+            if (optionalAppointment.isEmpty()) {
+                return ApiResponse.error("Appointment not found");
+            }
+
+            Appointment appointment = optionalAppointment.get();
+            appointment.setAppointmentDate(LocalDate.parse(date));
+            appointment.setAppointmentTime(LocalTime.parse(time));
+            
+            appointmentRepository.save(appointment);
+            return ApiResponse.success("Appointment rescheduled successfully", appointment);
+        } catch (Exception e) {
+            return ApiResponse.error("Error: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Cancel appointment
+     */
+    @Transactional
+    public MessageResponse cancelAppointment(Long id) {
+        var appointment = appointmentRepository.findById(id);
+        if (appointment.isEmpty()) {
+            return MessageResponse.error("Appointment not found");
+        }
+        
+        appointment.get().setStatus(Appointment.AppointmentStatus.cancelled);
+        appointment.get().setCancelledAt(LocalDateTime.now());
+        appointmentRepository.save(appointment.get());
+        return MessageResponse.success("Appointment cancelled successfully");
+    }
+
+    /**
+     * Complete appointment
+     */
+    @Transactional
+    public MessageResponse completeAppointment(Long id, String notes) {
+        var appointment = appointmentRepository.findById(id);
+        if (appointment.isEmpty()) {
+            return MessageResponse.error("Appointment not found");
+        }
+        
+        appointment.get().setStatus(Appointment.AppointmentStatus.completed);
+        appointment.get().setCompletedAt(LocalDateTime.now());
+        if (notes != null) {
+            appointment.get().setConsultationNotes(notes);
+        }
+        appointmentRepository.save(appointment.get());
+        return MessageResponse.success("Appointment completed successfully");
+    }
+
+    /**
+     * Filter appointments
+     */
+    public AppointmentListResponse filterAppointments(String status, String dateFrom, String dateTo, Long doctorId, Long patientId) {
+        List<Appointment> appointments;
+        
+        if (doctorId != null && patientId != null) {
+            appointments = appointmentRepository.findByDoctorIdAndPatientId(doctorId, patientId);
+        } else if (doctorId != null) {
+            appointments = appointmentRepository.findByDoctorIdOrderByAppointmentDateDesc(doctorId);
+        } else if (patientId != null) {
+            appointments = appointmentRepository.findByPatientIdOrderByAppointmentDateDesc(patientId);
+        } else {
+            appointments = appointmentRepository.findAll();
+        }
+        
+        return AppointmentListResponse.of(appointments);
+    }
 }

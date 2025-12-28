@@ -1,52 +1,180 @@
 package com.project.back_end.controllers;
 
+import com.project.back_end.DTO.ApiResponse;
+import com.project.back_end.DTO.AppointmentListResponse;
+import com.project.back_end.DTO.Login;
+import com.project.back_end.DTO.LoginResponse;
+import com.project.back_end.DTO.MessageResponse;
+import com.project.back_end.DTO.PrescriptionListResponse;
+import com.project.back_end.DTO.TokenValidationResponse;
+import com.project.back_end.models.Patient;
+import com.project.back_end.services.PatientService;
+import com.project.back_end.services.AuthenticationService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("${api.path}patient")
+@RequiredArgsConstructor
+@CrossOrigin(origins = "*")
 public class PatientController {
 
-// 1. Set Up the Controller Class:
-//    - Annotate the class with `@RestController` to define it as a REST API controller for patient-related operations.
-//    - Use `@RequestMapping("/patient")` to prefix all endpoints with `/patient`, grouping all patient functionalities under a common route.
+    private final PatientService patientService;
+    private final AuthenticationService authenticationService;
 
+    /**
+     * US-P002: Patient Login
+     * Authenticate patient with email and password
+     */
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse<Patient>> login(@Valid @RequestBody Login login) {
+        LoginResponse<Patient> response = authenticationService.validatePatient(login);
+        HttpStatus status = response.isSuccess() ? HttpStatus.OK : HttpStatus.UNAUTHORIZED;
+        return ResponseEntity.status(status).body(response);
+    }
 
-// 2. Autowire Dependencies:
-//    - Inject `PatientService` to handle patient-specific logic such as creation, retrieval, and appointments.
-//    - Inject the shared `Service` class for tasks like token validation and login authentication.
+    /**
+     * US-P001: Patient Registration
+     * Create a new patient account
+     */
+    @PostMapping("/register")
+    public ResponseEntity<?> createPatient(@Valid @RequestBody Patient patient) {
+        try {
+            LoginResponse<Patient> result = patientService.registerPatient(patient);
+            HttpStatus status = result.isSuccess() ? HttpStatus.CREATED : HttpStatus.CONFLICT;
+            return ResponseEntity.status(status).body(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(MessageResponse.error("Error creating patient: " + e.getMessage()));
+        }
+    }
 
+    /**
+     * US-P003: Get Patient Profile
+     * Retrieve patient details using token
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getPatient(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String token) {
+        
+        TokenValidationResponse validation = authenticationService.validateToken(token, "patient");
+        if (!validation.isValid()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validation);
+        }
 
-// 3. Define the `getPatient` Method:
-//    - Handles HTTP GET requests to retrieve patient details using a token.
-//    - Validates the token for the `"patient"` role using the shared service.
-//    - If the token is valid, returns patient information; otherwise, returns an appropriate error message.
+        try {
+            Patient patient = patientService.getPatientById(id);
+            if (patient == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(MessageResponse.error("Patient not found"));
+            }
+            return ResponseEntity.ok(ApiResponse.success("Patient retrieved successfully", patient));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(MessageResponse.error("Patient not found"));
+        }
+    }
 
+    /**
+     * US-P003: Update Patient Profile
+     * Update patient information
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updatePatient(
+            @PathVariable Long id,
+            @Valid @RequestBody Patient patient,
+            @RequestHeader("Authorization") String token) {
+        
+        TokenValidationResponse validation = authenticationService.validateToken(token, "patient");
+        if (!validation.isValid()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validation);
+        }
 
-// 4. Define the `createPatient` Method:
-//    - Handles HTTP POST requests for patient registration.
-//    - Accepts a validated `Patient` object in the request body.
-//    - First checks if the patient already exists using the shared service.
-//    - If validation passes, attempts to create the patient and returns success or error messages based on the outcome.
+        try {
+            patient.setId(id);
+            ApiResponse<Patient> result = patientService.updatePatient(patient);
+            HttpStatus status = result.isSuccess() ? HttpStatus.OK : HttpStatus.BAD_REQUEST;
+            return ResponseEntity.status(status).body(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(MessageResponse.error("Patient not found or update failed"));
+        }
+    }
 
+    /**
+     * US-P006: View Patient's Appointments
+     * Get all appointments for a specific patient
+     */
+    @GetMapping("/{id}/appointments")
+    public ResponseEntity<?> getPatientAppointments(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String token) {
+        
+        TokenValidationResponse validation = authenticationService.validateToken(token, "patient");
+        if (!validation.isValid()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validation);
+        }
 
-// 5. Define the `login` Method:
-//    - Handles HTTP POST requests for patient login.
-//    - Accepts a `Login` DTO containing email/username and password.
-//    - Delegates authentication to the `validatePatientLogin` method in the shared service.
-//    - Returns a response with a token or an error message depending on login success.
+        try {
+            AppointmentListResponse appointments = patientService.getPatientAppointments(id);
+            return ResponseEntity.ok(appointments);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(MessageResponse.error("Error fetching appointments: " + e.getMessage()));
+        }
+    }
 
+    /**
+     * US-P006: Filter Patient Appointments
+     * Filter appointments by status or other conditions
+     */
+    @GetMapping("/{id}/appointments/filter")
+    public ResponseEntity<?> filterPatientAppointments(
+            @PathVariable Long id,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo,
+            @RequestHeader("Authorization") String token) {
+        
+        TokenValidationResponse validation = authenticationService.validateToken(token, "patient");
+        if (!validation.isValid()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validation);
+        }
 
-// 6. Define the `getPatientAppointment` Method:
-//    - Handles HTTP GET requests to fetch appointment details for a specific patient.
-//    - Requires the patient ID, token, and user role as path variables.
-//    - Validates the token using the shared service.
-//    - If valid, retrieves the patient's appointment data from `PatientService`; otherwise, returns a validation error.
+        try {
+            AppointmentListResponse filteredAppointments = patientService.filterPatientAppointments(
+                id, status, dateFrom, dateTo);
+            return ResponseEntity.ok(filteredAppointments);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(MessageResponse.error("Error filtering appointments: " + e.getMessage()));
+        }
+    }
 
+    /**
+     * US-P009: View Patient Prescriptions
+     * Get all prescriptions for a specific patient
+     */
+    @GetMapping("/{id}/prescriptions")
+    public ResponseEntity<?> getPatientPrescriptions(
+            @PathVariable Long id,
+            @RequestHeader("Authorization") String token) {
+        
+        TokenValidationResponse validation = authenticationService.validateToken(token, "patient");
+        if (!validation.isValid()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(validation);
+        }
 
-// 7. Define the `filterPatientAppointment` Method:
-//    - Handles HTTP GET requests to filter a patient's appointments based on specific conditions.
-//    - Accepts filtering parameters: `condition`, `name`, and a token.
-//    - Token must be valid for a `"patient"` role.
-//    - If valid, delegates filtering logic to the shared service and returns the filtered result.
-
-
-
+        try {
+            PrescriptionListResponse prescriptions = patientService.getPatientPrescriptions(id);
+            return ResponseEntity.ok(prescriptions);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(MessageResponse.error("Error fetching prescriptions: " + e.getMessage()));
+        }
+    }
 }
-
-
