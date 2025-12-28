@@ -17,7 +17,7 @@ Stores patient account information and personal details.
 ```sql
 CREATE TABLE patients (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    full_name VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
@@ -30,7 +30,7 @@ CREATE TABLE patients (
     is_active BOOLEAN DEFAULT TRUE,
     INDEX idx_email (email),
     INDEX idx_phone (phone),
-    INDEX idx_full_name (full_name)
+    INDEX idx_username (username)
 );
 ```
 
@@ -49,7 +49,7 @@ Stores doctor profiles, credentials, and professional information.
 ```sql
 CREATE TABLE doctors (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    full_name VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
@@ -62,7 +62,7 @@ CREATE TABLE doctors (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
     INDEX idx_email (email),
-    INDEX idx_full_name (full_name)
+    INDEX idx_username (username)
 );
 ```
 
@@ -79,7 +79,7 @@ Stores administrator account information.
 ```sql
 CREATE TABLE admin (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    full_name VARCHAR(50) NOT NULL,
+    username VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password_hash VARCHAR(255) NOT NULL,
     phone VARCHAR(20),
