@@ -1,0 +1,54 @@
+name: Frontend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'app/src/main/resources/static/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'app/src/main/resources/static/**'
+
+jobs:
+  lint-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: |
+          npm install -g htmlhint stylelint stylelint-config-standard eslint
+          npm install -g eslint-config-standard eslint-plugin-import eslint-plugin-node eslint-plugin-promise
+
+      - name: Lint HTML files
+        run: |
+          echo "Linting HTML files..."
+          htmlhint "app/src/main/resources/static/**/*.html" || true
+
+      - name: Lint CSS files
+        run: |
+          echo "Linting CSS files..."
+          stylelint "app/src/main/resources/static/**/*.css" || true
+
+      - name: Lint JavaScript files
+        run: |
+          echo "Linting JavaScript files..."
+          eslint "app/src/main/resources/static/**/*.js" || true
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Frontend linting completed!"
+          echo "Check the logs above for any issues found."

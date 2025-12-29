@@ -1,0 +1,73 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'app/src/main/java/**'
+      - 'app/pom.xml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'app/src/main/java/**'
+      - 'app/pom.xml'
+
+jobs:
+  lint-and-build-backend:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Checkstyle
+        run: |
+          cd app
+          mvn checkstyle:checkstyle -Dcheckstyle.config.location=config/checkstyle.xml
+        continue-on-error: true
+
+      - name: Compile backend with Maven
+        run: |
+          cd app
+          mvn clean compile -DskipTests
+
+      - name: Run Maven verify
+        run: |
+          cd app
+          mvn verify -DskipTests
+
+      - name: Check for build issues
+        run: |
+          cd app
+          if [ -d "target/classes" ]; then
+            echo "Build successful! Classes generated."
+          else
+            echo "Build failed! No classes generated."
+            exit 1
+          fi
+
+      - name: Upload Checkstyle results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkstyle-results
+          path: app/target/checkstyle-result.xml
+          if-no-files-found: ignore
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Backend CI completed!"
+          echo "Checkstyle report: app/target/checkstyle-result.xml"
+          echo "Build artifacts: app/target/classes"
