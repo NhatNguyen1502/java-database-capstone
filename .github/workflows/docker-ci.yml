@@ -1,0 +1,116 @@
+name: Docker CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'app/Dockerfile'
+      - 'docker-compose.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'app/Dockerfile'
+      - 'docker-compose.yml'
+
+jobs:
+  lint-dockerfile:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Hadolint on app Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: app/Dockerfile
+          failure-threshold: warning
+          ignore: DL3008,DL3009
+          format: tty
+
+      - name: Lint app Dockerfile (detailed)
+        run: |
+          docker run --rm -i hadolint/hadolint < app/Dockerfile || true
+        continue-on-error: true
+
+      - name: Check Dockerfile best practices
+        run: |
+          echo "Checking Dockerfile for common issues..."
+          
+          # Check for LABEL usage
+          if grep -q "LABEL" app/Dockerfile; then
+            echo "✓ LABEL instructions found"
+          else
+            echo "⚠ Consider adding LABEL instructions for metadata"
+          fi
+          
+          # Check for HEALTHCHECK
+          if grep -q "HEALTHCHECK" app/Dockerfile; then
+            echo "✓ HEALTHCHECK instruction found"
+          else
+            echo "⚠ Consider adding HEALTHCHECK instruction"
+          fi
+          
+          # Check for USER instruction
+          if grep -q "USER" app/Dockerfile; then
+            echo "✓ USER instruction found (non-root user)"
+          else
+            echo "⚠ Consider adding USER instruction to avoid running as root"
+          fi
+          
+          # Check for .dockerignore
+          if [ -f "app/.dockerignore" ] || [ -f ".dockerignore" ]; then
+            echo "✓ .dockerignore file found"
+          else
+            echo "⚠ Consider adding .dockerignore file"
+          fi
+          
+          # Check for EXPOSE instruction
+          if grep -q "EXPOSE" app/Dockerfile; then
+            echo "✓ EXPOSE instruction found"
+          else
+            echo "⚠ Consider adding EXPOSE instruction to document ports"
+          fi
+
+      - name: Validate docker-compose.yml
+        run: |
+          echo "Validating docker-compose.yml syntax..."
+          docker compose -f docker-compose.yml config > /dev/null
+          echo "✓ docker-compose.yml syntax is valid"
+
+      - name: Check docker-compose best practices
+        run: |
+          echo "Checking docker-compose.yml for best practices..."
+          
+          # Check for version specification
+          if grep -q "version:" docker-compose.yml; then
+            echo "✓ Version specified in docker-compose.yml"
+          else
+            echo "⚠ Consider specifying version in docker-compose.yml"
+          fi
+          
+          # Check for healthcheck
+          if grep -q "healthcheck:" docker-compose.yml; then
+            echo "✓ Health checks configured in services"
+          else
+            echo "⚠ Consider adding health checks to services"
+          fi
+          
+          # Check for resource limits
+          if grep -q "mem_limit:" docker-compose.yml || grep -q "cpus:" docker-compose.yml; then
+            echo "✓ Resource limits configured"
+          else
+            echo "⚠ Consider adding resource limits to services"
+          fi
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Docker CI completed!"
+          echo "Hadolint checks completed for app/Dockerfile"
+          echo "docker-compose.yml validation completed"
+          echo "Review the logs above for any warnings or suggestions"
