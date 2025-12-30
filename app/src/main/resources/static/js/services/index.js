@@ -55,7 +55,7 @@ async function adminLoginHandler() {
   const password = document.getElementById('adminPassword').value;
 
   try {
-    const response = await fetch('/admin/login', {
+    const response = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -82,7 +82,7 @@ async function doctorLoginHandler() {
   const password = document.getElementById('doctorPassword').value;
 
   try {
-    const response = await fetch('/doctor/login', {
+    const response = await fetch('/api/doctor/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -109,7 +109,7 @@ async function patientLoginHandler() {
   const password = document.getElementById('patientPassword').value;
 
   try {
-    const response = await fetch('/patient/login', {
+    const response = await fetch('/api/patient/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
